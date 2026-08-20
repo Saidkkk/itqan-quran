@@ -19,7 +19,8 @@ import { ReportsView } from './components/ReportsView';
 import { AdminManagement } from './components/AdminManagement';
 import { DatabaseArchitecture } from './components/DatabaseArchitecture';
 import { SwaggerApiDocs } from './components/SwaggerApiDocs';
-import { BookOpen, Shield, Sparkles, UserCheck } from 'lucide-react';
+import { LoginModal } from './components/LoginModal';
+import { api } from './utils/api';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -42,9 +43,31 @@ export default function App() {
   const [enrollments, setEnrollmentsState] = useState<StudentEnrollment[]>(getStoredEnrollments);
   const [sessions, setSessionsState] = useState<HalaqahSession[]>(getStoredSessions);
 
-  // Active Simulated User
+  // Active User / Auth State
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('usr-tch-1'); // Default to Teacher
   const currentUser = users.find(u => u.id === currentUserId) || users[0];
+
+  // Initial Sync from PostgreSQL API on Load
+  useEffect(() => {
+    async function loadDataFromApi() {
+      try {
+        const [apiCountries, apiUsers, apiHalaqat, apiSessions] = await Promise.all([
+          api.getCountries(),
+          api.getUsers(),
+          api.getHalaqat(),
+          api.getSessions()
+        ]);
+        if (apiCountries?.length) { setCountriesState(apiCountries); setStoredCountries(apiCountries); }
+        if (apiUsers?.length) { setUsersState(apiUsers); setStoredUsers(apiUsers); }
+        if (apiHalaqat?.length) { setHalaqatState(apiHalaqat); setStoredHalaqat(apiHalaqat); }
+        if (apiSessions?.length) { setSessionsState(apiSessions); setStoredSessions(apiSessions); }
+      } catch (e) {
+        console.warn('Syncing with PostgreSQL API...', e);
+      }
+    }
+    loadDataFromApi();
+  }, []);
 
   // Sync dark mode class with html element
   useEffect(() => {
@@ -71,7 +94,7 @@ export default function App() {
     setStoredHalaqat(newHalaqat);
   };
 
-  const handleSaveSession = (newSession: HalaqahSession) => {
+  const handleSaveSession = async (newSession: HalaqahSession) => {
     const existingIndex = sessions.findIndex(s => s.id === newSession.id || (s.circleId === newSession.circleId && s.date === newSession.date));
     let updatedSessions: HalaqahSession[];
     if (existingIndex >= 0) {
@@ -82,6 +105,9 @@ export default function App() {
     }
     setSessionsState(updatedSessions);
     setStoredSessions(updatedSessions);
+
+    // Save directly to PostgreSQL via API
+    await api.saveSession(newSession);
   };
 
   const handleResetData = () => {
@@ -101,9 +127,17 @@ export default function App() {
     }
   };
 
+  const handleLoginSuccess = (user: User) => {
+    // Add user to state if new
+    if (!users.find(u => u.id === user.id)) {
+      setUsers([...users, user]);
+    }
+    handleSwitchUser(user.id);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
-      {/* Navbar adhering strictly to the Top Bar contract */}
+      {/* Navbar */}
       <Navbar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -113,6 +147,7 @@ export default function App() {
         isDarkMode={isDarkMode}
         setIsDarkMode={setIsDarkMode}
         onResetData={handleResetData}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
       />
 
       {/* Role Banner / Context Indicator */}
@@ -125,11 +160,16 @@ export default function App() {
               {currentUser.role === 'TEACHER' && '👨‍🏫 معلم الحلقة'}
               {currentUser.role === 'STUDENT' && '👦 الطالب'}
             </span>
-            <span>أنت مسجل حالياً باسم: <strong className="underline">{currentUser.name}</strong></span>
+            <span>مسجل الدخول باسم: <strong className="underline">{currentUser.name}</strong> ({currentUser.phone || currentUser.email})</span>
           </div>
 
           <div className="flex items-center gap-3 text-[11px] text-emerald-100">
-            <span>النسخة: 2.0 (Mobile-First / Postgres Architecture)</span>
+            <button
+              onClick={() => setIsLoginModalOpen(true)}
+              className="px-2.5 py-0.5 bg-emerald-700 hover:bg-emerald-600 rounded text-white font-bold transition"
+            >
+              تبديل الحساب / دخول برقم الجوال 📱
+            </button>
             <button
               onClick={handleResetData}
               className="hover:underline text-emerald-200 hover:text-white"
@@ -183,11 +223,18 @@ export default function App() {
         )}
       </main>
 
-      {/* Subtle Footer */}
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* Footer */}
       <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 px-6 text-center text-xs text-slate-500 dark:text-slate-400 no-print">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>© {new Date().getFullYear()} إتقان | نظام متكامل ومبسط لإدارة وتوثيق حلقات القرآن الكريم</p>
-          <p className="font-mono text-[11px]">PostgreSQL • SQLAlchemy 2.0 • FastAPI / NiceGUI • Mobile-First</p>
+          <p className="font-mono text-[11px]">DigitalOcean PostgreSQL (itqan schema) • Express & React • Mobile-First</p>
         </div>
       </footer>
     </div>

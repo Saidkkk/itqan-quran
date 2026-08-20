@@ -14,6 +14,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Country, Dialect, Halaqah, User, UserRole } from '../types';
+import { api } from '../utils/api';
 
 interface AdminManagementProps {
   countries: Country[];
@@ -68,19 +69,19 @@ export const AdminManagement: React.FC<AdminManagementProps> = ({
   const supervisors = users.filter(u => u.role === 'SUPERVISOR');
 
   // Country / Dialect handlers
-  const handleAddCountry = (e: React.FormEvent) => {
+  const handleAddCountry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCountryNameAr.trim()) return;
 
-    const newCountry: Country = {
-      id: `cnt-${Date.now()}`,
+    const payload = {
       nameAr: newCountryNameAr.trim(),
       nameEn: newCountryCode.trim() || 'Country',
-      code: newCountryCode.trim().toUpperCase() || 'XX',
+      code: newCountryCode.trim().toUpperCase() || `C${Date.now().toString().slice(-4)}`,
       dialects: []
     };
 
-    setCountries([...countries, newCountry]);
+    const savedCountry = await api.createCountry(payload);
+    setCountries([...countries, savedCountry]);
     setNewCountryNameAr('');
     setNewCountryCode('');
     setIsAddCountryModalOpen(false);
@@ -111,12 +112,11 @@ export const AdminManagement: React.FC<AdminManagementProps> = ({
   };
 
   // Halaqah handler
-  const handleAddHalaqah = (e: React.FormEvent) => {
+  const handleAddHalaqah = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHalaqahName.trim()) return;
 
-    const newHalaqah: Halaqah = {
-      id: `hlq-${Date.now()}`,
+    const payload = {
       name: newHalaqahName.trim(),
       code: `HLQ-${Date.now().toString().slice(-4)}`,
       teacherId: newHalaqahTeacherId || teachers[0]?.id || 'usr-tch-1',
@@ -130,18 +130,18 @@ export const AdminManagement: React.FC<AdminManagementProps> = ({
       createdAt: new Date().toISOString().split('T')[0]
     };
 
-    setHalaqat([...halaqat, newHalaqah]);
+    const savedHlq = await api.createHalaqah(payload);
+    setHalaqat([...halaqat, savedHlq]);
     setNewHalaqahName('');
     setIsAddHalaqahModalOpen(false);
   };
 
   // User handler
-  const handleAddUser = (e: React.FormEvent) => {
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUserName.trim() || !newUserPhone.trim()) return;
 
-    const newUser: User = {
-      id: `usr-${Date.now()}`,
+    const payload = {
       name: newUserName.trim(),
       email: newUserEmail.trim() || `${Date.now()}@itqan-quran.org`,
       phone: newUserPhone.trim(),
@@ -156,7 +156,8 @@ export const AdminManagement: React.FC<AdminManagementProps> = ({
       currentSurah: newUserRole === 'STUDENT' ? 78 : undefined
     };
 
-    setUsers([...users, newUser]);
+    const savedUser = await api.createUser(payload);
+    setUsers([...users, savedUser]);
     setNewUserName('');
     setNewUserPhone('');
     setNewUserEmail('');
