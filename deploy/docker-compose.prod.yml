@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  itqan-app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    container_name: itqan_quran_app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # قم بوضع رابط DigitalOcean Managed PostgreSQL connection string هنا
+      - DATABASE_URL=${DATABASE_URL:-postgresql://doadmin:YOUR_PASSWORD@db-postgresql-fra1-xxxxx.b.db.ondigitalocean.com:25060/defaultdb?sslmode=require}
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
