@@ -1,17 +1,18 @@
 services:
   itqan-app:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile
     container_name: itqan_quran_app
     restart: always
     ports:
       - "3000:3000"
     env_file:
-      - ../.env
+      - .env
     environment:
       - NODE_ENV=production
       - PORT=3000
+      # المتغيرات المفككة
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT:-25060}
       - DB_USER=${DB_USER:-doadmin}
