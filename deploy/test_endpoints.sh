@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # =========================================================================
 # سكربت الفحص والاختبار السريع بعد النشر (Post-Deployment Test Script)
-# النطاق: https://itqan.gizawysystems.com
+# النطاق: https://itqan.katatibi.com
 # =========================================================================
 
-TARGET_URL="${1:-https://itqan.gizawysystems.com}"
+TARGET_URL="${1:-https://itqan.katatibi.com}"
 
 echo "=========================================================="
 echo "🔍 جاري فحص واختبار منصة إتقان على النطاق: $TARGET_URL"
@@ -14,7 +14,7 @@ echo "=========================================================="
 echo -n "1️⃣ فحص استجابة الخادم (/api/health)... "
 HEALTH_RESP=$(curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL/api/health")
 if [ "$HEALTH_RESP" -eq 200 ]; then
-    echo "✅ [200 OK - الخادم يعمل بكفاءة]"
+    echo "✅ [200 OK - الخادم وقاعدة البيانات تعمل بكفاءة]"
 else
     echo "❌ [كود الخطأ: $HEALTH_RESP - يرجى التحقق من تشغيل التطبيق]"
 fi

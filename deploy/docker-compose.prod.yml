@@ -12,8 +12,16 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
-      # قم بوضع رابط DigitalOcean Managed PostgreSQL connection string هنا
-      - DATABASE_URL=${DATABASE_URL:-postgresql://doadmin:YOUR_PASSWORD@db-postgresql-fra1-xxxxx.b.db.ondigitalocean.com:25060/defaultdb?sslmode=require}
+      # الخيار الأول: المتغيرات المفككة (تدعم @ بأمان تام)
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT:-25060}
+      - DB_USER=${DB_USER:-doadmin}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME:-defaultdb}
+      - DB_SSL=${DB_SSL:-true}
+      - DB_SCHEMA=${DB_SCHEMA:-itqan}
+      # الخيار الثاني: رابط DATABASE_URL
+      - DATABASE_URL=${DATABASE_URL}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
